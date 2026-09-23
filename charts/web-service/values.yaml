@@ -1,6 +1,10 @@
 #==============================================================================
 # SHARED DEFAULTS - NO ENVIRONMENT VALUES OR CREDENTIALS
 #==============================================================================
+
+#==============================================================================
+# APPLICATION IMAGE, IDENTITY AND HEALTH
+#==============================================================================
 image: ""
 replicas: 0
 port: 3100
@@ -9,13 +13,25 @@ registrySecret: ""
 runAsUser: 1001
 runAsGroup: 1001
 readinessPath: /api/health/ready
+
+#==============================================================================
+# APPLICATION RESOURCE BUDGET
+#==============================================================================
 resources:
   requests: {cpu: 100m, memory: 256Mi}
   limits: {cpu: "1", memory: 1Gi}
+
+#==============================================================================
+# OPT-IN DATABASE MIGRATION
+#==============================================================================
 migration:
   enabled: false
   image: ""
   databaseUrlKey: DATABASE_URL
+
+#==============================================================================
+# OPTIONAL PERSISTENT POSTGRESQL
+#==============================================================================
 database:
   enabled: false
   image: ""
@@ -26,14 +42,25 @@ database:
   runAsGroup: 70
   name: app
   username: app
+  #============================================================================
+  # DATABASE RESOURCE BUDGET
+  #============================================================================
   resources:
     requests: {cpu: 100m, memory: 256Mi}
     limits: {cpu: "1", memory: 512Mi}
+
+  #==============================================================================
+  # OPT-IN INGRESS AND EXISTING TLS SECRET
+  #==============================================================================
 ingress:
   enabled: false
   className: traefik
   hostname: ""
   tlsSecret: ""
+
+#==============================================================================
+# MANDATORY NETWORK ISOLATION AND ALLOWED EGRESS
+#==============================================================================
 networkPolicy:
   enabled: true
   ingressNamespace: kube-system

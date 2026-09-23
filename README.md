@@ -16,9 +16,12 @@ Reusable Helm charts maintained by `bharathadigopula`. Production deployment is 
 ```sh
 bash scripts/validate.sh
 shellcheck scripts/*.sh
+bash scripts/smoke-kind.sh
 ```
 
 Helm 3.18.4 is the pinned CI version. Validation does not contact a cluster. Render tests are not a substitute for an isolated-cluster deployment test.
+
+The optional smoke test requires Docker, Kind, kubectl, Helm and OpenSSL. It creates and deletes a disposable Kind cluster with an explicit dedicated kubeconfig, enforces restricted pod security, tests application and PostgreSQL health, runs a no-op migration container, and verifies PVC retention after uninstall. It does not test application-specific migrations or network-policy enforcement (Kind's default CNI does not enforce NetworkPolicy).
 
 ## Consumer Configuration
 

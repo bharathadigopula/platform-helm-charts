@@ -7,6 +7,9 @@ kind: Job
 metadata:
   name: {{ include "web.name" . }}-migrate-{{ .Release.Revision }}
 spec:
+  #============================================================================
+  # FAIL WITHOUT RETRY AND BOUND JOB LIFETIME
+  #============================================================================
   backoffLimit: 0
   activeDeadlineSeconds: 600
   ttlSecondsAfterFinished: 86400
@@ -14,27 +17,42 @@ spec:
     metadata:
       labels: {app.kubernetes.io/instance: {{ .Release.Name | quote }}, app.kubernetes.io/component: migrate}
     spec:
+      #========================================================================
+      # ONE-SHOT POD WITHOUT KUBERNETES API CREDENTIALS
+      #========================================================================
       restartPolicy: Never
       automountServiceAccountToken: false
       {{- if .Values.registrySecret }}
       imagePullSecrets: [{name: {{ .Values.registrySecret | quote }}}]
       {{- end }}
+      #========================================================================
+      # NON-ROOT EXECUTION AND DEFAULT SECCOMP
+      #========================================================================
       securityContext:
         runAsNonRoot: true
         runAsUser: {{ .Values.runAsUser }}
         runAsGroup: {{ .Values.runAsGroup }}
         seccompProfile: {type: RuntimeDefault}
       containers:
+        #======================================================================
+        # IMAGE ENTRYPOINT EXECUTES THE APPLICATION MIGRATIONS
+        #======================================================================
         - name: migrate
           image: {{ .Values.migration.image | quote }}
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
             capabilities: {drop: [ALL]}
+          #====================================================================
+          # EXPOSE ONLY THE DATABASE CONNECTION SECRET
+          #====================================================================
           env:
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef: {name: {{ .Values.runtimeSecret | quote }}, key: {{ .Values.migration.databaseUrlKey | quote }}}
+          #====================================================================
+          # MIGRATION RESOURCE AND WRITABLE STORAGE BOUNDS
+          #====================================================================
           resources:
             requests: {cpu: 100m, memory: 256Mi}
             limits: {cpu: "1", memory: 512Mi}
