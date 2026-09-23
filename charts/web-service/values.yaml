@@ -1,0 +1,41 @@
+#==============================================================================
+# SHARED DEFAULTS - NO ENVIRONMENT VALUES OR CREDENTIALS
+#==============================================================================
+image: ""
+replicas: 0
+port: 3100
+runtimeSecret: ""
+registrySecret: ""
+runAsUser: 1001
+runAsGroup: 1001
+readinessPath: /api/health/ready
+resources:
+  requests: {cpu: 100m, memory: 256Mi}
+  limits: {cpu: "1", memory: 1Gi}
+migration:
+  enabled: false
+  image: ""
+  databaseUrlKey: DATABASE_URL
+database:
+  enabled: false
+  image: ""
+  existingSecret: ""
+  storageClass: local-path
+  storage: 8Gi
+  runAsUser: 70
+  runAsGroup: 70
+  name: app
+  username: app
+  resources:
+    requests: {cpu: 100m, memory: 256Mi}
+    limits: {cpu: "1", memory: 512Mi}
+ingress:
+  enabled: false
+  className: traefik
+  hostname: ""
+  tlsSecret: ""
+networkPolicy:
+  enabled: true
+  ingressNamespace: kube-system
+  ingressPodLabels: {app.kubernetes.io/name: traefik}
+  publicEgressPorts: [443, 587]

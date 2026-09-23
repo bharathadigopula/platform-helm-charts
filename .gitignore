@@ -1,0 +1,13 @@
+#==============================================================================
+# NEVER VERSION LOCAL SECRETS OR GENERATED PACKAGES
+#==============================================================================
+.DS_Store
+.env
+.env.*
+*.pem
+*.key
+*kubeconfig*
+*.tfstate*
+*.tgz
+dist/
+.tools/

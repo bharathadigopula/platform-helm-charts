@@ -1,0 +1,32 @@
+#==============================================================================
+# UNPRIVILEGED SHARED CHART VALIDATION
+#==============================================================================
+name: Validate charts
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: charts-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  charts:
+    name: Helm validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Install pinned Helm
+        run: bash scripts/install-ci-tools.sh
+      - name: Validate templates and security contracts
+        run: bash scripts/validate.sh
+  shell:
+    name: Shell validation
+    uses: bharathadigopula/github-pipeline-templates/.github/workflows/shell-validate.yml@3556c3024eefe31fa5527cf93ecd0c768e0833a4
+    with:
+      template_ref: 3556c3024eefe31fa5527cf93ecd0c768e0833a4

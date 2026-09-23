@@ -1,0 +1,12 @@
+#==============================================================================
+# BHARATHCOUDOPS SHARED WEB SERVICE CHART
+#==============================================================================
+apiVersion: v2
+name: web-service
+description: Hardened web application with optional PostgreSQL and migration job
+type: application
+version: 0.1.0
+kubeVersion: ">=1.30.0-0"
+maintainers:
+  - name: bharathadigopula
+home: https://github.com/bharathadigopula/platform-helm-charts

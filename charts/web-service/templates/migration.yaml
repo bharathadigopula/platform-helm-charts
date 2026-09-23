@@ -1,0 +1,43 @@
+#==============================================================================
+# EXPLICIT MIGRATION JOB - PIPELINE MUST WAIT BEFORE ENABLING THE APPLICATION
+#==============================================================================
+{{ if .Values.migration.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "web.name" . }}-migrate-{{ .Release.Revision }}
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 600
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels: {app.kubernetes.io/instance: {{ .Release.Name | quote }}, app.kubernetes.io/component: migrate}
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      {{- if .Values.registrySecret }}
+      imagePullSecrets: [{name: {{ .Values.registrySecret | quote }}}]
+      {{- end }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: {{ .Values.runAsUser }}
+        runAsGroup: {{ .Values.runAsGroup }}
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: migrate
+          image: {{ .Values.migration.image | quote }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef: {name: {{ .Values.runtimeSecret | quote }}, key: {{ .Values.migration.databaseUrlKey | quote }}}
+          resources:
+            requests: {cpu: 100m, memory: 256Mi}
+            limits: {cpu: "1", memory: 512Mi}
+          volumeMounts: [{name: temporary, mountPath: /tmp}]
+      volumes: [{name: temporary, emptyDir: {sizeLimit: 64Mi}}]
+{{ end }}
