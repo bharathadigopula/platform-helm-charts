@@ -2,6 +2,9 @@
 # RELEASE-SCOPED DEFAULT DENY AND EXPLICIT NETWORK FLOWS
 #==============================================================================
 {{ if .Values.networkPolicy.enabled }}
+#==============================================================================
+# DENY UNDECLARED TRAFFIC FOR ALL RELEASE PODS
+#==============================================================================
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -11,6 +14,9 @@ spec:
     matchLabels: {app.kubernetes.io/instance: {{ .Release.Name | quote }}}
   policyTypes: [Ingress, Egress]
 ---
+#==============================================================================
+# ALLOW DNS ONLY TO CLUSTER DNS PODS
+#==============================================================================
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -27,6 +33,9 @@ spec:
             matchLabels: {k8s-app: kube-dns}
       ports: [{protocol: UDP, port: 53}, {protocol: TCP, port: 53}]
 ---
+    #==============================================================================
+    # APPLICATION INGRESS AND PUBLIC OUTBOUND SERVICES
+    #==============================================================================
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -35,6 +44,9 @@ spec:
   podSelector:
     matchLabels: {app.kubernetes.io/instance: {{ .Release.Name | quote }}, app.kubernetes.io/component: app}
   policyTypes: [Ingress, Egress]
+  #============================================================================
+  # INGRESS MUST MATCH BOTH CONTROLLER NAMESPACE AND POD LABELS
+  #============================================================================
   ingress:
     - from:
         - namespaceSelector:
@@ -42,6 +54,9 @@ spec:
           podSelector:
             matchLabels: {{ .Values.networkPolicy.ingressPodLabels | toYaml | nindent 14 }}
       ports: [{protocol: TCP, port: {{ .Values.port }}}]
+  #============================================================================
+  # EXCLUDE PRIVATE NETWORKS, LOOPBACK AND INSTANCE METADATA
+  #============================================================================
   egress:
     - to:
         - ipBlock:
@@ -53,6 +68,9 @@ spec:
         {{- end }}
 {{ if .Values.database.enabled }}
 ---
+#==============================================================================
+# DATABASE ACCEPTS ONLY DECLARED SAME-RELEASE CLIENTS
+#==============================================================================
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -69,6 +87,9 @@ spec:
               - {key: app.kubernetes.io/component, operator: In, values: [app, migrate, backup]}
       ports: [{protocol: TCP, port: 5432}]
 ---
+    #==============================================================================
+    # DATABASE CLIENTS MAY REACH ONLY THE MATCHING POSTGRESQL PODS
+    #==============================================================================
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:

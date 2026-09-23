@@ -2,6 +2,9 @@
 # UNPRIVILEGED SHARED CHART VALIDATION
 #==============================================================================
 name: Validate charts
+#==============================================================================
+# VALIDATION TRIGGERS AND READ-ONLY EXECUTION
+#==============================================================================
 on:
   push:
     branches: [main]
@@ -9,10 +12,16 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+#==============================================================================
+# CANCEL SUPERSEDED RUNS FOR THE SAME REF
+#==============================================================================
 concurrency:
   group: charts-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  #============================================================================
+  # OFFLINE CHART RENDERING AND SECURITY CONTRACTS
+  #============================================================================
   charts:
     name: Helm validation
     runs-on: ubuntu-24.04
@@ -25,8 +34,27 @@ jobs:
         run: bash scripts/install-ci-tools.sh
       - name: Validate templates and security contracts
         run: bash scripts/validate.sh
+  #============================================================================
+  # SHARED SHELL CHECKS FROM AN IMMUTABLE TEMPLATE REVISION
+  #============================================================================
   shell:
     name: Shell validation
     uses: bharathadigopula/github-pipeline-templates/.github/workflows/shell-validate.yml@3556c3024eefe31fa5527cf93ecd0c768e0833a4
     with:
       template_ref: 3556c3024eefe31fa5527cf93ecd0c768e0833a4
+  #============================================================================
+  # DISPOSABLE LOCAL CLUSTER - NO PRODUCTION ACCESS
+  #============================================================================
+  runtime:
+    name: Isolated runtime validation
+    needs: charts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Install pinned Helm and Kind
+        run: bash scripts/install-ci-tools.sh
+      - name: Verify restricted workloads and retained storage
+        run: bash scripts/smoke-kind.sh

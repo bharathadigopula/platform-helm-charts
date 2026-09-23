@@ -26,4 +26,4 @@ Helm rollback restores workload configuration, not database contents. Retain the
 
 ## Current Validation Scope
 
-Offline chart tests verify rendering, safe defaults and rejected inputs. They do not establish runtime image compatibility, CNI enforcement, available node capacity, functioning storage, provider approvals or end-to-end application readiness. Those are deployment gates, not chart claims.
+Offline chart tests verify rendering, safe defaults and rejected inputs. A separate disposable Kind job tests non-root application/PostgreSQL readiness, a no-op migration container and PVC retention. It does not establish application-specific migration compatibility, CNI enforcement, production node capacity, provider approvals or end-to-end application readiness. Those remain deployment gates, not chart claims.

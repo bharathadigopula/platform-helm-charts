@@ -2,6 +2,9 @@
 # OPTIONAL POSTGRESQL WITH RETAINED VOLUME CLAIMS
 #==============================================================================
 {{ if .Values.database.enabled }}
+#==============================================================================
+# STABLE PRIVATE DATABASE DISCOVERY
+#==============================================================================
 apiVersion: v1
 kind: Service
 metadata:
@@ -11,6 +14,9 @@ spec:
   selector: {app.kubernetes.io/instance: {{ .Release.Name | quote }}, app.kubernetes.io/component: postgres}
   ports: [{name: postgres, port: 5432, targetPort: postgres}]
 ---
+#==============================================================================
+# SINGLE POSTGRESQL INSTANCE WITH RETAINED DATA
+#==============================================================================
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -25,11 +31,17 @@ spec:
     metadata:
       labels: {app.kubernetes.io/instance: {{ .Release.Name | quote }}, app.kubernetes.io/component: postgres}
     spec:
+      #========================================================================
+      # POD IDENTITY, TERMINATION GRACE AND REGISTRY ACCESS
+      #========================================================================
       automountServiceAccountToken: false
       terminationGracePeriodSeconds: 90
       {{- if .Values.registrySecret }}
       imagePullSecrets: [{name: {{ .Values.registrySecret | quote }}}]
       {{- end }}
+      #========================================================================
+      # NON-ROOT IDENTITY AND VOLUME GROUP OWNERSHIP
+      #========================================================================
       securityContext:
         runAsNonRoot: true
         runAsUser: {{ .Values.database.runAsUser }}
@@ -37,12 +49,18 @@ spec:
         fsGroup: {{ .Values.database.runAsGroup }}
         seccompProfile: {type: RuntimeDefault}
       containers:
+        #======================================================================
+        # PINNED IMAGE AND RESTRICTED CONTAINER PRIVILEGES
+        #======================================================================
         - name: postgres
           image: {{ .Values.database.image | quote }}
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
             capabilities: {drop: [ALL]}
+          #====================================================================
+          # EXTERNAL CREDENTIALS AND INITIAL DATABASE CONFIGURATION
+          #====================================================================
           envFrom: [{secretRef: {name: {{ .Values.database.existingSecret | quote }}}}]
           env:
             - {name: PGDATA, value: /var/lib/postgresql/data/pgdata}
@@ -50,6 +68,9 @@ spec:
             - {name: POSTGRES_USER, value: {{ .Values.database.username | quote }}}
           ports: [{name: postgres, containerPort: 5432}]
           resources: {{ .Values.database.resources | toYaml | nindent 12 }}
+          #====================================================================
+          # BOUNDED STARTUP AND DATABASE READINESS
+          #====================================================================
           startupProbe:
             exec: {command: [pg_isready, -U, {{ .Values.database.username | quote }}, -d, {{ .Values.database.name | quote }}]}
             periodSeconds: 5
@@ -60,6 +81,9 @@ spec:
           livenessProbe:
             exec: {command: [pg_isready, -U, {{ .Values.database.username | quote }}, -d, {{ .Values.database.name | quote }}]}
             periodSeconds: 20
+          #====================================================================
+          # PERSISTENT DATA AND EPHEMERAL SOCKET/SCRATCH STORAGE
+          #====================================================================
           volumeMounts:
             - {name: pgdata, mountPath: /var/lib/postgresql/data}
             - {name: run, mountPath: /var/run/postgresql}
@@ -67,6 +91,9 @@ spec:
       volumes:
         - {name: run, emptyDir: {medium: Memory, sizeLimit: 16Mi}}
         - {name: temporary, emptyDir: {sizeLimit: 64Mi}}
+  #============================================================================
+  # RETAINED SINGLE-WRITER PERSISTENT CLAIM
+  #============================================================================
   volumeClaimTemplates:
     - metadata:
         name: pgdata
