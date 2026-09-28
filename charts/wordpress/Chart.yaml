@@ -1,0 +1,10 @@
+#==============================================================================
+# SHARED WORDPRESS CHART
+#==============================================================================
+
+apiVersion: v2
+name: wordpress
+description: Dashboard-managed WordPress with MariaDB, Redis, Nginx caching, and encrypted backups
+type: application
+version: 0.1.0
+appVersion: "7.1.0"
