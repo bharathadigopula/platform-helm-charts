@@ -12,8 +12,8 @@ wordpress:
   adminEmail: wordpress@example.invalid
   image:
     repository: wordpress
-    tag: 7.1.0-php8.5-fpm-alpine
-    digest: sha256:9ba798b17d7f3b4b1ab4997ef0edb4c029b8883e52e720fdf5c9100b193eda3e
+    tag: 7.1.2-php8.5-fpm-alpine
+    digest: sha256:93f6949bc4060dbc275b3293a12af71206fdbdb4ec87369b49b19311313cc5e3
     pullPolicy: IfNotPresent
   replicas: 1
   service:
