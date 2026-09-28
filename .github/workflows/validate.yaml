@@ -39,7 +39,7 @@ jobs:
   #============================================================================
   shell:
     name: Shell validation
-    uses: bharathadigopula/github-pipeline-templates/.github/workflows/shell-validate.yml@3556c3024eefe31fa5527cf93ecd0c768e0833a4
+    uses: bharathcloudops/github-pipeline-templates/.github/workflows/shell-validate.yml@3556c3024eefe31fa5527cf93ecd0c768e0833a4
     with:
       template_ref: 3556c3024eefe31fa5527cf93ecd0c768e0833a4
   #============================================================================
