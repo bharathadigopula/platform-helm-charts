@@ -47,6 +47,21 @@ done
 if helm template example "$root/charts/web-service" "${inputs[@]}" --set-string password=not-allowed >/dev/null 2>&1; then exit 1; fi
 
 #==============================================================================
+# SHARED WORDPRESS PLATFORM CONTRACT
+#==============================================================================
+wordpress=$(helm template wordpress "$root/charts/wordpress" --namespace ignitox \
+  --set backup.enabled=true --set backup.restore.enabled=true \
+  --set backup.restore.id=validation)
+helm lint "$root/charts/wordpress" --strict --namespace ignitox
+for resource in wordpress-core wordpress-extensions wordpress-uploads redis mariadb wordpress-backup; do
+  grep -Fq "name: $resource" <<< "$wordpress"
+done
+grep -Fq 'restic backup --tag wordpress /backup/database.sql /webroot /extensions /uploads' <<< "$wordpress"
+grep -Fq 'fastcgi_cache WORDPRESS;' <<< "$wordpress"
+grep -Fq 'cp -R /usr/src/wordpress/wp-content/themes/. /extensions/themes/' <<< "$wordpress"
+if grep -Eq 'bharathcoudops|/usr/src/wordpress/wp-content/plugins/' <<< "$wordpress"; then exit 1; fi
+
+#==============================================================================
 # BOUNDED VALIDATION RESULT
 #==============================================================================
 printf 'shared_helm_validation=ready\n'

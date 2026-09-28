@@ -1,0 +1,139 @@
+#==============================================================================
+# WORDPRESS NGINX CONFIGURATION
+#==============================================================================
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wordpress-nginx
+  labels:
+    app.kubernetes.io/name: wordpress
+    app.kubernetes.io/component: application
+data:
+  default.conf: |
+    map $request_method $skip_cache_method {
+      default 1;
+      GET 0;
+      HEAD 0;
+    }
+
+    map $query_string $skip_cache_query {
+      default 1;
+      "" 0;
+    }
+
+    map $request_uri $skip_cache_uri {
+      default 0;
+      ~^/wp-admin/ 1;
+      ~^/wp-login\.php 1;
+      ~^/wp-cron\.php 1;
+      ~^/wp-json/ 1;
+      ~^/xmlrpc\.php 1;
+    }
+
+    map $http_cookie $skip_cache_cookie {
+      default 0;
+      ~*wordpress_logged_in 1;
+      ~*comment_author 1;
+      ~*wp-postpass 1;
+      ~*woocommerce 1;
+    }
+
+    map "$skip_cache_method$skip_cache_query$skip_cache_uri$skip_cache_cookie" $skip_cache {
+      default 1;
+      "0000" 0;
+    }
+
+    map $http_cf_visitor $redirect_https {
+      default 0;
+      ~*"scheme":"http" 1;
+    }
+
+    fastcgi_cache_path /var/cache/nginx/wordpress levels=1:2 keys_zone=WORDPRESS:16m inactive=10m max_size=256m use_temp_path=off;
+
+    server {
+      listen 8080;
+      server_name _;
+      server_tokens off;
+      root /var/www/html;
+      index index.php;
+      client_max_body_size 128m;
+
+      if ($redirect_https) {
+        return 301 https://$host$request_uri;
+      }
+
+      gzip on;
+      gzip_comp_level 5;
+      gzip_min_length 1024;
+      gzip_proxied any;
+      gzip_vary on;
+      gzip_types application/javascript application/json application/manifest+json application/xml font/ttf image/svg+xml text/css text/javascript text/plain text/xml;
+
+      open_file_cache max=1000 inactive=60s;
+      open_file_cache_valid 120s;
+      open_file_cache_min_uses 2;
+      open_file_cache_errors on;
+
+      add_header Permissions-Policy "camera=(), geolocation=(), microphone=()" always;
+      add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+      add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+      add_header Content-Security-Policy "default-src 'self' https: data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; font-src 'self' data: https:; connect-src 'self' https:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; frame-ancestors 'self'; form-action 'self'" always;
+      add_header X-Content-Type-Options "nosniff" always;
+      add_header X-Frame-Options "SAMEORIGIN" always;
+
+      location = /robots.txt {
+        default_type text/plain;
+        return 200 "User-agent: *\nDisallow: /wp-admin/\nAllow: /wp-admin/admin-ajax.php\nSitemap: https://$host/wp-sitemap.xml\n";
+      }
+
+      location = /wp-sitemap.xml {
+        rewrite ^ /index.php?sitemap=index last;
+      }
+
+      location / {
+        try_files $uri $uri/ /index.php?$args;
+      }
+
+      location ~* \.(?:avif|css|eot|gif|ico|jpe?g|js|mjs|png|svg|ttf|webp|woff2?)$ {
+        expires 30d;
+        access_log off;
+        try_files $uri =404;
+      }
+
+      location ~ \.php$ {
+        try_files $uri =404;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_param HTTP_X_FORWARDED_HOST $http_x_forwarded_host;
+        fastcgi_param HTTP_X_FORWARDED_PROTO $http_x_forwarded_proto;
+        fastcgi_buffer_size 32k;
+        fastcgi_buffers 8 16k;
+        fastcgi_cache WORDPRESS;
+        fastcgi_cache_bypass $skip_cache;
+        fastcgi_cache_lock on;
+        fastcgi_cache_methods GET HEAD;
+        fastcgi_cache_valid 200 60s;
+        fastcgi_no_cache $skip_cache $upstream_http_set_cookie;
+        add_header Permissions-Policy "camera=(), geolocation=(), microphone=()" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+        add_header Content-Security-Policy "default-src 'self' https: data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; font-src 'self' data: https:; connect-src 'self' https:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; frame-ancestors 'self'; form-action 'self'" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header X-FastCGI-Cache $upstream_cache_status always;
+        fastcgi_pass 127.0.0.1:9000;
+      }
+
+      location = /xmlrpc.php {
+        deny all;
+      }
+
+      location ~* ^/(license\.txt|readme\.html|wp-config\.php)$ {
+        deny all;
+      }
+
+      location ~ /\. {
+        deny all;
+      }
+    }
