@@ -48,7 +48,8 @@ spec:
               if [ -z "$(find /extensions/themes -mindepth 1 -maxdepth 1 -type d -print -quit)" ]; then
                 cp -R /usr/src/wordpress/wp-content/themes/. /extensions/themes/
               fi
-              if [ ! -d /extensions/plugins/redis-cache ]; then
+              if [ ! -r /extensions/plugins/redis-cache/dependencies/predis/predis/autoload.php ]; then
+                rm -rf /extensions/plugins/redis-cache
                 cp -R /usr/src/wordpress/wp-content/plugins/redis-cache /extensions/plugins/redis-cache
               fi
               if [ ! -f /extensions/object-cache.php ]; then
