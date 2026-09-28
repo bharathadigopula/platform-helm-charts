@@ -41,7 +41,10 @@ spec:
             - /bin/sh
             - -c
             - |
+              set -eu
+              chown 0:0 /var/www/html /extensions /nginx-cache
               mkdir -p /extensions/themes /extensions/plugins /nginx-cache
+              chown 0:0 /extensions/themes /extensions/plugins
               rm -f /var/www/html/wp-config.php
               chown -R 33:33 /var/www/html
               chmod -R u+rwX /var/www/html
@@ -49,9 +52,14 @@ spec:
                 cp -R /usr/src/wordpress/wp-content/themes/. /extensions/themes/
               fi
               if [ ! -r /extensions/plugins/redis-cache/dependencies/predis/predis/autoload.php ]; then
+                if [ -e /extensions/plugins/redis-cache ]; then
+                  chown -R 0:0 /extensions/plugins/redis-cache
+                fi
                 rm -rf /extensions/plugins/redis-cache
                 cp -R /usr/src/wordpress/wp-content/plugins/redis-cache /extensions/plugins/redis-cache
               fi
+              test -r /extensions/plugins/redis-cache/redis-cache.php
+              test -r /extensions/plugins/redis-cache/dependencies/predis/predis/autoload.php
               if [ ! -f /extensions/object-cache.php ]; then
                 cp /usr/src/wordpress/wp-content/plugins/redis-cache/includes/object-cache.php /extensions/object-cache.php
               fi
