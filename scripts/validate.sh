@@ -62,6 +62,7 @@ grep -Fq 'cp -R /usr/src/wordpress/wp-content/themes/. /extensions/themes/' <<< 
 grep -Fq 'cp -R /usr/src/wordpress/wp-content/plugins/redis-cache /extensions/plugins/redis-cache' <<< "$wordpress"
 grep -Fq 'cp /usr/src/wordpress/wp-content/plugins/redis-cache/includes/object-cache.php /extensions/object-cache.php' <<< "$wordpress"
 [[ "$(grep -Fc 'subPath: object-cache.php' <<< "$wordpress")" == "2" ]]
+grep -Fq "define('WP_REDIS_GRACEFUL', true);" <<< "$wordpress"
 if grep -Fq 'bharathcoudops' <<< "$wordpress"; then exit 1; fi
 
 #==============================================================================
