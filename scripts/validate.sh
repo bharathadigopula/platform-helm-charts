@@ -59,7 +59,10 @@ done
 grep -Fq 'restic backup --tag wordpress /backup/database.sql /webroot /extensions /uploads' <<< "$wordpress"
 grep -Fq 'fastcgi_cache WORDPRESS;' <<< "$wordpress"
 grep -Fq 'cp -R /usr/src/wordpress/wp-content/themes/. /extensions/themes/' <<< "$wordpress"
-if grep -Eq 'bharathcoudops|/usr/src/wordpress/wp-content/plugins/' <<< "$wordpress"; then exit 1; fi
+grep -Fq 'cp -R /usr/src/wordpress/wp-content/plugins/redis-cache /extensions/plugins/redis-cache' <<< "$wordpress"
+grep -Fq 'cp /usr/src/wordpress/wp-content/plugins/redis-cache/includes/object-cache.php /extensions/object-cache.php' <<< "$wordpress"
+[[ "$(grep -Fc 'subPath: object-cache.php' <<< "$wordpress")" == "2" ]]
+if grep -Fq 'bharathcoudops' <<< "$wordpress"; then exit 1; fi
 
 #==============================================================================
 # BOUNDED VALIDATION RESULT
