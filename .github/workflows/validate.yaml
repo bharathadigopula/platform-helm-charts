@@ -1,7 +1,7 @@
 #==============================================================================
 # UNPRIVILEGED SHARED CHART VALIDATION
 #==============================================================================
-name: Validate charts
+name: 01 - Validate Helm Charts
 #==============================================================================
 # VALIDATION TRIGGERS AND READ-ONLY EXECUTION
 #==============================================================================
@@ -23,38 +23,40 @@ jobs:
   # OFFLINE CHART RENDERING AND SECURITY CONTRACTS
   #============================================================================
   charts:
-    name: Helm validation
+    name: 01 - Validate Helm Charts
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: 01 - Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - name: Install pinned Helm
+      - name: 02 - Install Pinned Helm
         run: bash scripts/install-ci-tools.sh
-      - name: Validate templates and security contracts
+      - name: 03 - Validate Templates and Security Contracts
         run: bash scripts/validate.sh
   #============================================================================
   # SHARED SHELL CHECKS FROM AN IMMUTABLE TEMPLATE REVISION
   #============================================================================
   shell:
-    name: Shell validation
-    uses: bharathcloudops/github-pipeline-templates/.github/workflows/shell-validate.yml@3556c3024eefe31fa5527cf93ecd0c768e0833a4
+    name: 02 - Validate Shell Scripts
+    uses: bharathcloudops/github-pipeline-templates/.github/workflows/shell-validate.yml@v0.9.4
     with:
-      template_ref: 3556c3024eefe31fa5527cf93ecd0c768e0833a4
+      template_ref: v0.9.4
   #============================================================================
   # DISPOSABLE LOCAL CLUSTER - NO PRODUCTION ACCESS
   #============================================================================
   runtime:
-    name: Isolated runtime validation
+    name: 03 - Validate Isolated Runtime
     needs: charts
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: 01 - Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - name: Install pinned Helm and Kind
+      - name: 02 - Install Pinned Helm and Kind
         run: bash scripts/install-ci-tools.sh
-      - name: Verify restricted workloads and retained storage
+      - name: 03 - Verify Workloads and Storage
         run: bash scripts/smoke-kind.sh
