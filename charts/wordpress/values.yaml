@@ -23,6 +23,22 @@ wordpress:
     size: 15Gi
     coreSize: 5Gi
     extensionsSize: 5Gi
+  configuration:
+    memoryLimit: 256M
+    maxMemoryLimit: 512M
+    autosaveInterval: 120
+    postRevisions: 10
+    emptyTrashDays: 14
+  php:
+    maxExecutionTime: 300
+    maxInputTime: 300
+    maxInputVars: 5000
+    memoryLimit: 512M
+    opcacheInternedStringsBuffer: 16
+    opcacheMaxAcceleratedFiles: 20000
+    opcacheMemoryConsumption: 192
+    postMaxSize: 128M
+    uploadMaxFilesize: 128M
   resources:
     requests:
       cpu: 100m
@@ -32,6 +48,7 @@ wordpress:
       memory: 768Mi
 
 nginx:
+  clientMaxBodySize: 128m
   image:
     repository: nginxinc/nginx-unprivileged
     tag: 1.29.4-alpine-slim
@@ -95,6 +112,7 @@ ingress:
 
 backup:
   enabled: false
+  tag: wordpress
   schedule: "17 2 * * *"
   secretName: wordpress-backup-secrets
   image:
@@ -117,6 +135,10 @@ backup:
     enabled: false
     id: ""
     snapshot: latest
+  verify:
+    enabled: false
+    snapshot: latest
+    id: manual
 
 podSecurityContext:
   fsGroup: 33

@@ -86,8 +86,8 @@ spec:
               args:
                 - |
                   restic snapshots >/dev/null 2>&1 || restic init
-                  restic backup --tag wordpress /backup/database.sql /webroot /extensions /uploads
-                  restic forget --tag wordpress --keep-daily {{ .Values.backup.retention.daily }} --keep-weekly {{ .Values.backup.retention.weekly }} --keep-monthly {{ .Values.backup.retention.monthly }} --prune
+                  restic backup --tag {{ .Values.backup.tag | quote }} /backup/database.sql /webroot /extensions /uploads
+                  restic forget --tag {{ .Values.backup.tag | quote }} --keep-daily {{ .Values.backup.retention.daily }} --keep-weekly {{ .Values.backup.retention.weekly }} --keep-monthly {{ .Values.backup.retention.monthly }} --prune
               env:
                 - name: HOME
                   value: /tmp

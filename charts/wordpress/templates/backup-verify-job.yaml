@@ -1,0 +1,63 @@
+{{- if and .Values.backup.enabled .Values.backup.verify.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: wordpress-backup-verify-{{ required "backup.verify.id is required" .Values.backup.verify.id }}
+  labels:
+    app.kubernetes.io/name: wordpress
+    app.kubernetes.io/component: backup-verify
+spec:
+  ttlSecondsAfterFinished: 86400
+  backoffLimit: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: wordpress
+        app.kubernetes.io/component: backup-verify
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: restic
+          image: "{{ .Values.backup.image.repository }}:{{ .Values.backup.image.tag }}@{{ .Values.backup.image.digest }}"
+          imagePullPolicy: {{ .Values.backup.image.pullPolicy }}
+          envFrom:
+            - secretRef:
+                name: {{ .Values.backup.secretName }}
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              restic check
+              restic restore {{ .Values.backup.verify.snapshot | quote }} --tag {{ .Values.backup.tag | quote }} --target /verify
+              test -s /verify/backup/database.sql
+              test -d /verify/webroot
+              test -d /verify/extensions
+              test -d /verify/uploads
+              printf 'wordpress_backup_verification=ready\n'
+          resources:
+{{ toYaml .Values.backup.resources | indent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: verification
+              mountPath: /verify
+            - name: temporary
+              mountPath: /tmp
+      volumes:
+        - name: verification
+          emptyDir: {}
+        - name: temporary
+          emptyDir: {}
+{{- end }}
