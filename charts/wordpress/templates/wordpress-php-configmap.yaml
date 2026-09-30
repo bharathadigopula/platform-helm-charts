@@ -13,17 +13,17 @@ data:
   wordpress.ini: |
     expose_php = Off
     file_uploads = On
-    max_execution_time = 300
-    max_input_time = 300
-    max_input_vars = 5000
-    memory_limit = 512M
+    max_execution_time = {{ .Values.wordpress.php.maxExecutionTime }}
+    max_input_time = {{ .Values.wordpress.php.maxInputTime }}
+    max_input_vars = {{ .Values.wordpress.php.maxInputVars }}
+    memory_limit = {{ .Values.wordpress.php.memoryLimit }}
     opcache.enable = 1
-    opcache.interned_strings_buffer = 16
-    opcache.max_accelerated_files = 20000
-    opcache.memory_consumption = 192
+    opcache.interned_strings_buffer = {{ .Values.wordpress.php.opcacheInternedStringsBuffer }}
+    opcache.max_accelerated_files = {{ .Values.wordpress.php.opcacheMaxAcceleratedFiles }}
+    opcache.memory_consumption = {{ .Values.wordpress.php.opcacheMemoryConsumption }}
     opcache.revalidate_freq = 2
     opcache.validate_timestamps = 1
-    post_max_size = 128M
+    post_max_size = {{ .Values.wordpress.php.postMaxSize }}
     realpath_cache_size = 4096K
     realpath_cache_ttl = 600
-    upload_max_filesize = 128M
+    upload_max_filesize = {{ .Values.wordpress.php.uploadMaxFilesize }}

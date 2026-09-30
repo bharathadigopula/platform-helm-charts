@@ -12,6 +12,9 @@ metadata:
 spec:
   serviceName: mariadb
   replicas: 1
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Retain
+    whenScaled: Retain
   selector:
     matchLabels:
       app.kubernetes.io/name: wordpress

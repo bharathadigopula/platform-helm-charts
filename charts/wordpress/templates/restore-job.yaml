@@ -36,17 +36,18 @@ spec:
             - -ec
           args:
             - |
-              restic restore {{ .Values.backup.restore.snapshot | quote }} --target /restore
-              if [ -d /restore/webroot ]; then
-                find /webroot -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
-                cp -a /restore/webroot/. /webroot/
-              fi
+              restic check
+              restic restore {{ .Values.backup.restore.snapshot | quote }} --tag {{ .Values.backup.tag | quote }} --target /restore
+              test -s /restore/backup/database.sql
+              test -d /restore/webroot
+              test -d /restore/extensions
+              test -d /restore/uploads
+              find /webroot -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
+              cp -a /restore/webroot/. /webroot/
               find /uploads -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
               cp -a /restore/uploads/. /uploads/
-              if [ -d /restore/extensions ]; then
-                find /extensions -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
-                cp -a /restore/extensions/. /extensions/
-              fi
+              find /extensions -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
+              cp -a /restore/extensions/. /extensions/
           env:
             - name: HOME
               value: /tmp
@@ -83,7 +84,9 @@ spec:
             - /bin/sh
             - -ec
           args:
-            - mariadb --host=mariadb --user="${MARIADB_USER}" --password="${MARIADB_PASSWORD}" "${MARIADB_DATABASE}" < /restore/backup/database.sql
+            - |
+              mariadb --host=mariadb --user=root --password="${MARIADB_ROOT_PASSWORD}" --execute="DROP DATABASE IF EXISTS \`${MARIADB_DATABASE}\`; CREATE DATABASE \`${MARIADB_DATABASE}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; GRANT ALL PRIVILEGES ON \`${MARIADB_DATABASE}\`.* TO '${MARIADB_USER}'@'%';"
+              mariadb --host=mariadb --user="${MARIADB_USER}" --password="${MARIADB_PASSWORD}" "${MARIADB_DATABASE}" < /restore/backup/database.sql
           env:
             - name: HOME
               value: /tmp
@@ -96,6 +99,11 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.secrets.existingSecret }}
                   key: {{ .Values.secrets.wordpressDatabasePasswordKey }}
+            - name: MARIADB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.existingSecret }}
+                  key: {{ .Values.secrets.mariadbRootPasswordKey }}
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true

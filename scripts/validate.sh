@@ -52,18 +52,23 @@ if helm template example "$root/charts/web-service" "${inputs[@]}" --set-string 
 wordpress=$(helm template wordpress "$root/charts/wordpress" --namespace ignitox \
   --set backup.enabled=true --set backup.restore.enabled=true \
   --set backup.restore.id=validation)
+wordpress_custom=$(helm template wordpress "$root/charts/wordpress" --namespace custom-site \
+  --set-string wordpress.php.memoryLimit=384M \
+  --set-string wordpress.configuration.memoryLimit=192M \
+  --set-string nginx.clientMaxBodySize=64m)
+wordpress_verify=$(helm template wordpress "$root/charts/wordpress" --namespace ignitox \
+  --set backup.enabled=true --set backup.verify.enabled=true \
+  --set backup.verify.id=validation)
 helm lint "$root/charts/wordpress" --strict --namespace ignitox
 for resource in wordpress-core wordpress-extensions wordpress-uploads redis mariadb wordpress-backup; do
   grep -Fq "name: $resource" <<< "$wordpress"
 done
-grep -Fq 'restic backup --tag wordpress /backup/database.sql /webroot /extensions /uploads' <<< "$wordpress"
+grep -Fq 'restic backup --tag "wordpress" /backup/database.sql /webroot /extensions /uploads' <<< "$wordpress"
 grep -Fq 'fastcgi_cache WORDPRESS;' <<< "$wordpress"
 grep -Fq 'cp -R /usr/src/wordpress/wp-content/themes/. /extensions/themes/' <<< "$wordpress"
 grep -Fq 'set -eu' <<< "$wordpress"
-grep -Fq 'chown 0:0 /var/www/html /extensions /nginx-cache' <<< "$wordpress"
-grep -Fq 'chown 0:0 /extensions/themes /extensions/plugins' <<< "$wordpress"
+grep -Fq 'chown -R 0:0 /var/www/html /extensions /nginx-cache' <<< "$wordpress"
 grep -Fq 'if [ ! -r /extensions/plugins/redis-cache/dependencies/predis/predis/autoload.php ]; then' <<< "$wordpress"
-grep -Fq 'chown -R 0:0 /extensions/plugins/redis-cache' <<< "$wordpress"
 grep -Fq 'rm -rf /extensions/plugins/redis-cache' <<< "$wordpress"
 grep -Fq 'cp -R /usr/src/wordpress/wp-content/plugins/redis-cache /extensions/plugins/redis-cache' <<< "$wordpress"
 grep -Fq 'test -r /extensions/plugins/redis-cache/redis-cache.php' <<< "$wordpress"
@@ -71,6 +76,22 @@ grep -Fq 'test -r /extensions/plugins/redis-cache/dependencies/predis/predis/aut
 grep -Fq 'cp /usr/src/wordpress/wp-content/plugins/redis-cache/includes/object-cache.php /extensions/object-cache.php' <<< "$wordpress"
 [[ "$(grep -Fc 'subPath: object-cache.php' <<< "$wordpress")" == "2" ]]
 grep -Fq "define('WP_REDIS_GRACEFUL', true);" <<< "$wordpress"
+[[ "$(grep -Fc 'helm.sh/resource-policy: keep' <<< "$wordpress")" == "3" ]]
+grep -Fq 'whenDeleted: Retain' <<< "$wordpress"
+grep -Fq 'whenScaled: Retain' <<< "$wordpress"
+grep -Fq 'restic check' <<< "$wordpress"
+grep -Fq 'restic restore "latest" --tag "wordpress" --target /restore' <<< "$wordpress"
+grep -Fq 'test -s /restore/backup/database.sql' <<< "$wordpress"
+grep -Fq 'DROP DATABASE IF EXISTS' <<< "$wordpress"
+grep -Fq 'memory_limit = 384M' <<< "$wordpress_custom"
+grep -Fq "define('WP_MEMORY_LIMIT', '192M');" <<< "$wordpress_custom"
+grep -Fq 'client_max_body_size 64m;' <<< "$wordpress_custom"
+chmod_line=$(grep -nF 'chmod -R u+rwX /var/www/html' <<< "$wordpress" | cut -d: -f1)
+chown_line=$(grep -nF 'chown -R 33:33 /var/www/html' <<< "$wordpress" | cut -d: -f1)
+(( chmod_line < chown_line ))
+grep -Fq 'name: wordpress-backup-verify-validation' <<< "$wordpress_verify"
+grep -Fq 'restic restore "latest" --tag "wordpress" --target /verify' <<< "$wordpress_verify"
+grep -Fq 'wordpress_backup_verification=ready' <<< "$wordpress_verify"
 if grep -Fq 'bharathcoudops' <<< "$wordpress"; then exit 1; fi
 
 #==============================================================================

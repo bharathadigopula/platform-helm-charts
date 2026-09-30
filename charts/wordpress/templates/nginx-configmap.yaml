@@ -57,7 +57,7 @@ data:
       server_tokens off;
       root /var/www/html;
       index index.php;
-      client_max_body_size 128m;
+      client_max_body_size {{ .Values.nginx.clientMaxBodySize }};
 
       if ($redirect_https) {
         return 301 https://$host$request_uri;
