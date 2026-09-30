@@ -1,6 +1,6 @@
 # BharathCoudOps Platform Helm Charts
 
-Reusable Helm charts maintained by `bharathadigopula`. Production deployment is performed by Jenkins; GitHub Actions only validates repository changes.
+Reusable Helm charts maintained by `bharathadigopula`. GitHub Actions validates this public repository on hosted runners; consuming repositories own production deployment through their approved workflows.
 
 ## Contents
 
