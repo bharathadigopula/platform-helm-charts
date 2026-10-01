@@ -179,6 +179,7 @@ spec:
         operator: In
         values:
           - backup
+          - backup-verify
           - restore
   policyTypes:
     - Egress
