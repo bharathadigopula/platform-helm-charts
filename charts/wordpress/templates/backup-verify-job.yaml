@@ -28,6 +28,9 @@ spec:
         - name: restic
           image: "{{ .Values.backup.image.repository }}:{{ .Values.backup.image.tag }}@{{ .Values.backup.image.digest }}"
           imagePullPolicy: {{ .Values.backup.image.pullPolicy }}
+          env:
+            - name: XDG_CACHE_HOME
+              value: /tmp
           envFrom:
             - secretRef:
                 name: {{ .Values.backup.secretName }}
