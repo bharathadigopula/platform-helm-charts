@@ -92,6 +92,9 @@ chown_line=$(grep -nF 'chown -R 33:33 /var/www/html' <<< "$wordpress" | cut -d: 
 grep -Fq 'name: wordpress-backup-verify-validation' <<< "$wordpress_verify"
 grep -Fq 'restic restore "latest" --tag "wordpress" --target /verify' <<< "$wordpress_verify"
 grep -Fq 'wordpress_backup_verification=ready' <<< "$wordpress_verify"
+operations_policy=$(sed -n '/name: wordpress-operations/,/^---$/p' <<< "$wordpress_verify")
+grep -Fq -- '- backup-verify' <<< "$operations_policy"
+grep -Fq 'port: 443' <<< "$operations_policy"
 if grep -Fq 'bharathcoudops' <<< "$wordpress"; then exit 1; fi
 
 #==============================================================================
